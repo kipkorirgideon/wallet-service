@@ -111,6 +111,5 @@ timezones and we needed to harmonize them. The tool helped confirm it.
     - `>= and >` in limit checks and duplicate logic that drifts from the real check.
 - I set up the project on my local machine and read through all the code myself to understand it. 
     - I tested the real graphql endpoint with Postman. I confirmed every finding myself in `limits.py` and `schema.py`. 
-    - I worked out the concurrency example by hand. 
-    - Also noticed optimization issue which the `/claude-review` the tool didn't catch.
+    - Also noticed optimization issue which the `/claude-review` command didn't catch.
 

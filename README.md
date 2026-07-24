@@ -1,103 +1,143 @@
 # Review: Daily Send Limits
 
-I took a look at the structure and I think it is a good start. The `check_daily_limit` the check and the GraphQL field for headroom all make sense. However I found some few issues that need to be addressed before this `pr` can be approved.
+I took a look at the structure and I think it's a good start. The `check_daily_limit`
+check and the GraphQL field for headroom all make sense. However, I found a few
+issues that need to be addressed before this PR can be approved.
 
-## 1. `App/models.py`. Add a migration to manage existing and new columns
+## 1. `app/models.py` — Add a migration to manage existing and new columns
 
-- When you add `daily_send_limit = Column(Integer, nullable=False)` it changes the existing users table. The problem is that `Base.metadata.create_all(engine)` does not alter a created table. On an existing deployment the `SQLAlchemy` will Insert a column that is not present and there is no backfill for existing users.
+- Adding `daily_send_limit = Column(Integer, nullable=False)` changes the existing
+  users table. The problem is that `Base.metadata.create_all(engine)` does not alter
+  an already-created table. On an existing deployment, SQLAlchemy will query or
+  insert a column that isn't present, and there's no backfill for existing users.
 
-- To fix this, you should write actual migrations that adds the column and backfills existing rows. You can use [Alembic](http://alembic.sqlalchemy.org) to manage migrations.
+- Fix: write a migration that adds the column and backfills existing rows. You can
+  use [Alembic](http://alembic.sqlalchemy.org) to manage migrations.
 
-## 2. `App/schema.py`. Make the Check and Send atomic under concurrent requests
+## 2. `app/schema.py` — Make the check and send atomic under concurrent requests
 
-- The `send_money` function calls `limits.check_daily_limit` and `execute_transfer` as two separate transactions. This can cause problems if two concurrent requests for the sender are made at the same time. Both requests can read the `already_sent` total before either transfers balance update commits. That means both requests can pass the check and proceed. Hence user's completed daily total can go over the limit.
+- `send_money` calls `limits.check_daily_limit` and `execute_transfer` as two
+  separate transactions. This causes problems if two concurrent requests for the
+  same sender come in at the same time: both can read the same `already_sent` total
+  before either transfer's balance update commits, so both pass the check and
+  proceed — taking the user's completed daily total over the limit.
 
-- For example if a user has a 10,000 limit and sends two 8,000 requests at the same time, both requests can pass the check and proceed thus 16,000 might be sent which is above the limit. This is the exact thing the feature is supposed to stop.
+- For example, a user with a 10,000 limit who fires two 8,000 sends at once could
+  have both pass and succeed, landing at 16,000 sent — well above the limit. This is
+  the exact thing the feature is supposed to stop.
 
-- To fix this, you should wrap the check and the write in one DB transaction with a row lock on the user.
+- Fix: wrap the check and the write in one DB transaction with a row lock on the
+  user.
 
-## 3. Use the users country timezone for the window
+## 3. Use the user's country timezone for the daily window
 
-- The `_start_of_today()` function builds midnight from `datetime.utcnow()` so the usage window changes at UTC midnight for every user. However the `CountryInfo` already carries a timezone field but it is only used for currency lookups. You should calculate the start of the local day from the users country timezone.
+- `_start_of_today()` builds midnight from `datetime.utcnow()`, so the usage window
+  changes at UTC midnight for every user. `CountryInfo` already carries a timezone
+  field, but it's currently only used for currency lookups. Calculate the start of
+  the local day from the user's country timezone instead.
 
-## 4. Allow transfers that land on the limit
+## 4. Allow transfers that land exactly on the limit
 
-- In `app/limits.py` the comparison `already_sent + amount >= limit` rejects a transfer when the resulting daily total is exactly the configured limit.
-- However the ticket says to block when the total would go above the limit.
-- To fix this, you should change this comparison to `>`.
+- In `app/limits.py`, the comparison `already_sent + amount >= limit` rejects a
+  transfer when the resulting daily total is exactly the configured limit.
+- The ticket says to block only when the total would go *above* the limit.
+- Fix: change the comparison to `>`.
 
-## 5. `App/schema.py`. Keep Status Query Rules Consistent
+## 5. `app/schema.py` — Keep the status query consistent with the real check
 
-- The `daily_limit_status` sums all of todays transfers itself instead of calling `_amount_sent_today`. This means it does not exclude FAILED/PENDING transfers.
-- For example if a user has an 8,000 transfer and a 1,000 COMPLETED one with a limit of 10,000, the real check would allow 9,000 more. However the endpoint reports `remaining: 1,000` which is wrong and confusing.
+- `daily_limit_status` sums all of today's transfers itself instead of calling
+  `_amount_sent_today`, so it doesn't exclude FAILED/PENDING transfers.
+- For example, a user with an 8,000 FAILED transfer and a 1,000 COMPLETED one, on a
+  10,000 limit, should have 9,000 remaining per the real check. This endpoint
+  reports `remaining: 1,000` instead — wrong and confusing for anyone building
+  against this API.
+- Fix: call `_amount_sent_today` here instead of duplicating the filter logic.
 
-- To fix this, you should call `_amount_sent_today` for summing todays transfer instead of duplicating the filter logic.
+## 6. `app/limits.py` — Optimization
 
-## 6. `App/limits.py`. Optimization
-
-- The `_amount_sent_today` function pulls every transfer row for the day with a `query.order_by(Transfer.created_at.desc()).all()` and sums in Python. This can cause latency if the endpoint gets polled a lot from the mobile app.
-- To fix this, push the summation into SQL with `SQLAlchemy` instead of pulling rows and summing in Python..
-- Also drop the `order_by` too. Ordering is not needed when doing summation.
+- `_amount_sent_today` pulls every transfer row for the day with
+  `query.order_by(Transfer.created_at.desc()).all()` and sums in Python. This can
+  cause latency if the endpoint gets polled a lot from the mobile app.
+- Fix: push the summation into SQL instead of pulling rows and summing in Python.
+  Also drop the `order_by` — ordering isn't needed when summing.
 
 ## Review Highlights Summary
 
 ### Recommendation: Request Changes
 
-- The scope of this feature is appropriate. The main use case works as expected.
-- However there are a bugs that:
-  - Let the daily limit be bypassed or misapplied
-  - Will break deployment on an existing database - `migration gap`
-- I am requesting these changes `BEFORE` approval
+- The scope of this feature is appropriate, and the main use case works as
+  expected.
+- However, there are bugs that:
+  - Let the daily limit be bypassed or misapplied.
+  - Will break deployment on an existing database (migration gap).
+  - Make the status endpoint disagree with the actual enforcement logic.
+- I'm requesting these changes before approval.
 
 ### High Priority Issues (Must Fix Before Merge)
 
-1. **Missing migration for the column**.
-   - `create_all` won't alter an already created table.This will break on any existing deployment
-   - Since `send_daily_limit` is not nullable, there is no mechanism for backfilling existing rows.
+1. **Missing migration for the new column.**
+   - `create_all` won't alter an already-created table — this will break on any
+     existing deployment.
+   - Since `daily_send_limit` is not nullable, there's no mechanism for backfilling
+     existing rows.
 
-2. **Concurrent requests Issue**.
-   - The check and the write are not atomic, so concurrent sends can bypass the daily limit entirely.
+2. **Race condition under concurrent requests.**
+   - The check and the write aren't atomic, so concurrent sends can bypass the
+     daily limit entirely.
 
-3. **Timezone handling bug**.
-   - The daily window resets at UTC midnight for every user
+3. **Timezone handling bug.**
+   - The daily window resets at UTC midnight for every user, misattributing usage
+     for non-UTC users.
 
-4. **Transfer limit boundary validation issue**.
-   - `>=` instead of `>` incorrectly blocks a transfer that lands exactly on the limit.
+4. **Transfer limit boundary validation issue.**
+   - `>=` instead of `>` incorrectly blocks a transfer that lands exactly on the
+     limit.
 
 ### Lower Priority
 
-5. **Optimization**
-   - `_amount_sent_today` runs for every send and every status check.
-   - If this endpoint gets polled a lot from the mobile app it will show up as latency.
-   
+5. **Status endpoint diverges from the real check.**
+   - `daily_limit_status` doesn't exclude FAILED/PENDING transfers, so it can
+     report a different remaining balance than what `check_daily_limit` would
+     actually allow. Not unsafe on its own, but misleading for anyone building
+     against the API.
+
+6. **Optimization.**
+   - `_amount_sent_today` runs on every send and every status check. If this
+     endpoint gets polled a lot from the mobile app, it'll show up as latency.
+
 ---
 
 ## What I Left Out and Why
-**What I Left Out**
-- The project did not specify which version of Python to use.
-- I found out that `SQLAlchemy version 2.0.30` does not work with `Python version 3.14`.
-- I had to install an older version of `Python version 3.11` on my computer to get the project working.
-  
-**Why I Left Out**
-- I did not mention this when I reviewed the project because it is a problem with the setup of the project not something that was changed in this   pr.
-- It would be a good idea to create a separate task to specify the Python version in the project settings but it is not related to the current task, about daily limits
+
+**What I left out**
+- The project didn't specify which version of Python to use.
+- I found that `SQLAlchemy 2.0.30` doesn't work with `Python 3.14`.
+- I had to install an older `Python 3.11` on my machine to get the project working.
+
+**Why I left it out**
+- I didn't mention this in the review because it's a problem with the project's
+  setup, not something that changed in this PR.
+- It would be worth creating a separate task to pin the Python version in the
+  project settings, but it's unrelated to this ticket.
 
 ---
 
 ## Claude Code use
 
-- I used Claude Code `[/code-review]` command to review this diff before writing it up.
+- I used Claude Code's `/code-review` command to review this diff before writing it
+  up.
 
 **Where it helped:**
-- Claude found two problems on its own:
-  - Missing migrations
-  - Concurrent requests.
-- I already suspected the timezone bug: in my past project, users were spread across
-  different timezones and we needed to harmonize them and the tool helped confirm it.
+- Claude found two problems on its own: the missing migration and the race
+  condition.
+- I already suspected the timezone bug — in a past project, users were spread
+  across different timezones and we needed to harmonize them — and the tool helped
+  confirm it.
 
 **Where it fell short:**
-- The boundary comparison bug for daily send limit
-- I also noticed an optimization issue claude didn't catch.
+- The boundary bug (`>=` vs `>`) and the status endpoint bug are ones it didn't
+  catch; I found both myself.
+- I also noticed the optimization issue, which Claude didn't catch.
 
 **How I verified everything:**
 - I set up the project on my machine and read through all the code myself to
@@ -105,3 +145,4 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 - I ran the existing test suite with pytest to confirm it passed cleanly before
   digging into the diff.
 - I tested the GraphQL endpoint with Postman and confirmed every finding myself.
+- 

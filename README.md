@@ -133,8 +133,7 @@ issues that need to be addressed before this PR can be approved.
   confirm it.
 
 **Where it fell short:**
-- The boundary bug (`>=` vs `>`) and the status endpoint bug are ones it did not
-  catch; I found both myself.
+- Claude did not catch boundary bug (`>=` vs `>`)
 - I also noticed the optimization issue, which Claude did not catch.
 
 **How I verified everything:**

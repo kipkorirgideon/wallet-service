@@ -59,7 +59,7 @@ issues that need to be addressed before this PR can be approved.
   `query.order_by(Transfer.created_at.desc()).all()` and sums in Python. This can
   cause latency if the endpoint gets polled a lot from the mobile app.
 - To fix this, push the summation into SQLAlchemy instead of pulling rows and summing in Python.
-  Also drop the `order_by` — ordering isn't needed when summing.
+  Also drop the `order_by`. Ordering isn't needed when doing summation.
 
 ## Review Highlights Summary
 

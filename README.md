@@ -4,7 +4,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 ## 1. `App/models.py`. Add a migration to manage existing and new columns
 
-- When you add `daily_send_limit = Column(Integer, =False)` it changes the existing users table. The problem is that `Base.metadata.create_all(engine)` does not alter a created table. On an existing deployment the `SQLAlchemy` will Insert a column that is not present and there is no backfill for existing users.
+- When you add `daily_send_limit = Column(Integer, nullable=False)` it changes the existing users table. The problem is that `Base.metadata.create_all(engine)` does not alter a created table. On an existing deployment the `SQLAlchemy` will Insert a column that is not present and there is no backfill for existing users.
 
 - To fix this, you should write actual migrations that adds the column and backfills existing rows. You can use [Alembic](http://alembic.sqlalchemy.org) to manage migrations.
 
@@ -96,7 +96,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
   different timezones and we needed to harmonize them and the tool helped confirm it.
 
 **Where it fell short:**
-- The boundary bug for daily send limit `>= & >`
+- The boundary comparison bug for daily send limit
 - I also noticed an optimization issue claude didn't catch.
 
 **How I verified everything:**

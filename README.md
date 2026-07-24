@@ -101,4 +101,6 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 **How I verified everything:**
 - I set up the project on my machine and read through all the code myself to
   understand it.
+- I ran the existing test suite with pytest to confirm it passed cleanly before
+  digging into the diff.
 - I tested the GraphQL endpoint with Postman and confirmed every finding myself.

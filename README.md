@@ -40,7 +40,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 ### Recommendation: Request Changes
 
-- The scope of this feature is appropriate. The main use case works as expected. However there are a bugs that let the daily limit be bypassed or misapplied, plus a migration gap that will break deployment on an existing database. I am requesting changes than approving as-is.
+- The scope of this feature is appropriate. The main use case works as expected. However there are a bugs that let the daily limit be bypassed or misapplied, plus a migration gap that will break deployment on an existing database. I am requesting changes than approving as it is.
 
 ### High Priority Issues (Must Fix Before Merge)
 

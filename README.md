@@ -63,23 +63,42 @@ filter logic.
 
 - `_amount_sent_today` pulls every transfer row for the day with an
 unnecessary `query.order_by(Transfer.created_at.desc()).all()` and sums in Python. 
-- This Runs on every send and every status check. Fine for now but if this endpoint gets polled a lot from
+- This runs on every send and every status check. Fine for now but if this endpoint gets polled a lot from
 the mobile app it will show up as latency. 
-- Fix: push that into `SQL with SQLAlchemy` instead of pulling rows and summing in Python:
+- Fix: push that into SQL with SQLAlchemy instead of pulling rows and summing in Python.
 
 ## Review Highlights Summary
-### Overall Assessment
-- The scope of this feature is appropriate.
-- The main use case works as expected, matching the `PR_DESCRIPTION.md`.
+
+### Recommendation: Request Changes
+
+The scope of this feature is appropriate and the main use case works as
+expected, matching `PR_DESCRIPTION.md`. However, there are three bugs
+that let the daily limit be bypassed or misapplied, plus a migration gap
+that will break deployment on an existing database. None of these are
+edge cases — they hit the core guarantee this ticket exists to provide,
+so I'm requesting changes rather than approving as-is.
 
 ### High Priority Issues (Must Fix Before Merge)
-The following issues affect the core correctness of the daily transfer limit and should be resolved before merging:
-1. Transfer limit boundary validation issue
-    - Causes incorrect enforcement at the transfer limit boundary.
-2. Timezone handling bug
-    - Incorrectly determines which day a transfer should count toward, leading to inaccurate daily limit calculations.
-3. Race condition under concurrent requests
-    - Allows the daily transfer limit to be bypassed when multiple transfers are processed simultaneously.
+
+1. **Missing migration for the new column** — `create_all` won't alter
+   an already-created table, so this breaks on any existing deployment
+   with no backfill for current users.
+2. **Race condition under concurrent requests** — the check and the
+   write aren't atomic, so concurrent sends can bypass the daily limit
+   entirely.
+3. **Timezone handling bug** — the daily window resets at UTC midnight
+   for everyone, so usage gets attributed to the wrong day for
+   non-UTC users.
+4. **Transfer limit boundary validation issue** — `>=` instead of `>`
+   incorrectly blocks a transfer that lands exactly on the limit.
+
+### Lower Priority
+
+5. Status endpoint diverges from the real enforcement logic (confusing,
+   not unsafe on its own, but should still be fixed before merge since
+   it misleads anyone building against the API).
+6. Optimization: sum in SQL instead of Python (not blocking, but worth
+   doing before this endpoint sees real traffic).
 
 ---
 
@@ -111,3 +130,4 @@ timezones and we needed to harmonize them. The tool helped confirm it.
 - I set up the project on my local machine and read through all the code myself to understand it. 
     - I tested the real graphql endpoint with Postman. I confirmed every finding myself in `limits.py` and `schema.py`. 
     - Also noticed optimization issue which the `/claude-review` command didn't catch.
+    - 

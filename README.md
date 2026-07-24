@@ -1,6 +1,6 @@
 # Review: Daily Send Limits
 
-I took a look at the structure and I think it is a good start. The `check_daily_limit` the check and the GraphQL field for headroom all make sense. However I found a problems that need to be fixed before this can be merged.
+I took a look at the structure and I think it is a good start. The `check_daily_limit` the check and the GraphQL field for headroom all make sense. However I found some few issues that need to be addressed before this `pr` can be approved.
 
 ## 1. `App/models.py`. Add a migration to manage existing and new columns
 

@@ -6,7 +6,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 - When you add `daily_send_limit = Column(Integer, =False)` it changes the existing users table. The problem is that `Base.metadata.create_all(engine)` does not alter a created table. On an existing deployment the `SQLAlchemy` will Insert a column that is not present and there is no backfill for existing users.
 
-- To fix this you should write a migration that adds the column and backfills existing rows. You can use [Alembic](http://alembic.sqlalchemy.org) to manage migrations.
+- To fix this, you should write a migration that adds the column and backfills existing rows. You can use [Alembic](http://alembic.sqlalchemy.org) to manage migrations.
 
 ## 2. `App/schema.py`. Make the Check and Send atomic under concurrent requests
 
@@ -14,7 +14,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 - For example if a user has a 10,000 limit and sends two 8,000 requests at the same time, both requests can pass the check and proceed. This is the thing the feature is supposed to stop.
 
-- To fix this you should wrap the check and the write in one DB transaction with a row lock on the user.
+- To fix this, you should wrap the check and the write in one DB transaction with a row lock on the user.
 
 ## 3. Use the users country timezone for the window
 
@@ -24,19 +24,20 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 - In `app/limits.py` the comparison `already_sent + amount >= limit` rejects a transfer when the resulting daily total is exactly the configured limit.
 - However the ticket says to block when the total would go above the limit.
-- To fix this you should change this comparison to `>`.
+- To fix this, you should change this comparison to `>`.
 
 ## 5. `App/schema.py`. Status endpoint disagrees with the check
 
 - The `daily_limit_status` sums all of todays transfers itself instead of calling `_amount_sent_today`. This means it does not exclude FAILED/PENDING transfers. For example if a user has an 8,000 transfer and a 1,000 COMPLETED one with a limit of 10,000, the real check would allow 9,000 more. However the endpoint reports `remaining: 1,000` which is wrong and confusing.
 
-- To fix this you should call `_amount_sent_today` instead of duplicating the filter logic.
+- To fix this, you should call `_amount_sent_today` instead of duplicating the filter logic.
 
 ## 6. `App/limits.py`. Optimization
 
 - The `_amount_sent_today` function pulls every transfer row for the day with a `query.order_by(Transfer.created_at.desc()).all()` and sums in Python.
-- This can cause latency if the endpoint gets polled a lot from the app. push that into SQL with `SQLAlchemy` instead of pulling rows and summing in Python.
-- Also remove `order_by` because this is unncessary step
+- This can cause latency if the endpoint gets polled a lot from the mobile app.
+- To fix this, push the sum into SQL instead of pulling rows and summing in Python.
+- Also drop the `order_by` too. Ordering is not needed when doing summation.
 
 ## Review Highlights Summary
 
@@ -45,17 +46,16 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 - The scope of this feature is appropriate. The main use case works as expected.
 - However there are a bugs that:
   - Let the daily limit be bypassed or misapplied
-  - A migration gap that will break deployment on an existing database.
-- I am requesting changes `BEFORE` approval
+  - Will break deployment on an existing database - `migration gap`
+- I am requesting these changes `BEFORE` approval
 
 ### High Priority Issues (Must Fix Before Merge)
 
 1. **Missing migration for the column**.
-   - `create_all` won't alter an already created table.
-   - This will break on any existing deployment
-   - Since it `send_daily_limit` is not nullable there is no mechanism for backfilling existing users current users.
+   - `create_all` won't alter an already created table.This will break on any existing deployment
+   - Since `send_daily_limit` is not nullable there is no mechanism for backfilling existing users and current users.
 
-2. **Race condition under requests**.
+2. **Concurrent requests Issue**.
    - The check and the write aren't atomic, so concurrent sends can bypass the daily limit entirely.
 
 3. **Timezone handling bug**.

@@ -19,7 +19,7 @@ issues that need to be addressed before this PR can be approved.
 - `send_money` calls `limits.check_daily_limit` and `execute_transfer` as two
   separate transactions. This causes problems if two concurrent requests for the
   same sender come in at the same time: both can read the same `already_sent` total
-  before either transfer's balance update commits.If both pass the check and
+  before either transfer's balance update commits. If both pass the check and
   proceed, it will make user's completed daily total over the limit.
 
 - For example, a user with a 10,000 limit who fires two 8,000 sends at once could
@@ -51,7 +51,7 @@ issues that need to be addressed before this PR can be approved.
   10,000 limit, should have 9,000 remaining per the real check. This endpoint
   reports `remaining: 1,000` instead — wrong and confusing for anyone building
   against this API.
-- To fix this, call `_amount_sent_today` here instead of duplicating the filter logic `[daily_limit_status]`.
+- To fix this, call `_amount_sent_today` here instead of duplicating the filter logic.
 
 ## 6. `app/limits.py` — Optimization
 
@@ -133,7 +133,7 @@ issues that need to be addressed before this PR can be approved.
   confirm it.
 
 **Where it fell short:**
-- Claude did not catch boundary bug (`>=` vs `>`)
+- The boundary bug (>= vs >) and the status endpoint bug are ones it did not catch, which I found both myself
 - I also noticed the optimization issue, which Claude did not catch.
 
 **How I verified everything:**

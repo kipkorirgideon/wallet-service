@@ -1,4 +1,4 @@
-# Review: Daily Send Limits
+# PR Review: Daily Send Limits
 
 I took a look at the structure and I think it's a good start. The `check_daily_limit`
 check and the GraphQL field for headroom all make sense. However, I found a few
@@ -34,6 +34,9 @@ issues that need to be addressed before this PR can be approved.
 - `_start_of_today()` builds midnight from `datetime.utcnow()`, so the usage window
   changes at UTC midnight for every user. `CountryInfo` already carries a timezone
   field, but it is currently only used for currency lookups.
+- For example, a user in Kampala (UTC+3) who sends money at 1am local time has that
+  usage attributed to the previous UTC day, so it doesn't count against today's limit
+  until the window resets hours later than it should.
 - To fix this, calculate the start of the local day from the user's country timezone instead.
 
 ## 4. Allow transfers that land exactly on the limit
@@ -86,7 +89,8 @@ issues that need to be addressed before this PR can be approved.
      daily limit entirely.
 
 3. **Timezone handling bug.**
-   - The daily window resets at UTC midnight for every user
+   - The daily window resets at UTC midnight for every user, so usage near midnight
+     gets attributed to the wrong local day for non-UTC users.
 
 4. **Transfer limit boundary validation issue.**
    - `>=` instead of `>` incorrectly blocks a transfer that lands exactly on the
@@ -133,7 +137,8 @@ issues that need to be addressed before this PR can be approved.
   confirm it.
 
 **Where it fell short:**
-- The boundary bug (>= vs >) and the status endpoint bug are ones it did not catch, which I found both myself
+- The boundary bug (`>=` vs `>`) and the status endpoint bug are ones it did not
+  catch — I found both myself.
 - I also noticed the optimization issue, which Claude did not catch.
 
 **How I verified everything:**
@@ -142,3 +147,4 @@ issues that need to be addressed before this PR can be approved.
 - I ran the existing test suite with pytest to confirm it passed cleanly before
   digging into the diff.
 - I tested the GraphQL endpoint with Postman and confirmed every finding myself.
+- 

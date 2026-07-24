@@ -12,7 +12,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 - The `send_money` function calls `limits.check_daily_limit` and `execute_transfer` as two separate transactions. This can cause problems if two concurrent requests for the sender are made at the same time. Both requests can read the `already_sent` total before either transfers balance update commits. That means both requests can pass the check and proceed. Hence user's completed daily total can go over the limit.
 
-- For example if a user has a 10,000 limit and sends two 8,000 requests at the same time, both requests can pass the check and proceed. This is the thing the feature is supposed to stop.
+- For example if a user has a 10,000 limit and sends two 8,000 requests at the same time, both requests can pass the check and proceed thus 16,000 might be sent which is above the limit. This is the exact thing the feature is supposed to stop.
 
 - To fix this, you should wrap the check and the write in one DB transaction with a row lock on the user.
 

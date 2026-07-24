@@ -83,7 +83,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 ## Claude Code use
 
-- I used Claude Code to review this diff before writing it up.
+- I used Claude Code `[/code-review]` command to review this diff before writing it up.
 
 **Where it helped:**
 - It found two problems on its own:

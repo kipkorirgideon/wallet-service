@@ -59,35 +59,34 @@ issues that need to be addressed before this PR can be approved.
   `query.order_by(Transfer.created_at.desc()).all()` and sums in Python. This can
   cause latency if the endpoint gets polled a lot from the mobile app.
 - To fix this, push the summation into SQLAlchemy instead of pulling rows and summing in Python.
-  Also drop the `order_by`. Ordering isn't needed when doing summation.
+  Also drop the `order_by`. Ordering is not required when doing summation.
 
 ## Review Highlights Summary
 
 ### Recommendation: Request Changes
 
-- The scope of this feature is appropriate, and the main use case works as
+- The scope of this feature is appropriate and the main use case works as
   expected.
 - However, there are bugs that:
   - Let the daily limit be bypassed or misapplied.
   - Will break deployment on an existing database (migration gap).
   - Make the status endpoint disagree with the actual enforcement logic.
-- I'm requesting these changes before approval.
+- Iam requesting these changes before approval.
 
 ### High Priority Issues (Must Fix Before Merge)
 
 1. **Missing migration for the new column.**
-   - `create_all` won't alter an already-created table — this will break on any
+   - `create_all` will not alter an already created table. This will break on any
      existing deployment.
-   - Since `daily_send_limit` is not nullable, there's no mechanism for backfilling
+   - Since `daily_send_limit` is not nullable, there is no mechanism for backfilling
      existing rows.
 
 2. **Race condition under concurrent requests.**
-   - The check and the write aren't atomic, so concurrent sends can bypass the
+   - The check and the write are not atomic. Thus concurrent sends can bypass the
      daily limit entirely.
 
 3. **Timezone handling bug.**
-   - The daily window resets at UTC midnight for every user, misattributing usage
-     for non-UTC users.
+   - The daily window resets at UTC midnight for every user
 
 4. **Transfer limit boundary validation issue.**
    - `>=` instead of `>` incorrectly blocks a transfer that lands exactly on the
@@ -96,29 +95,28 @@ issues that need to be addressed before this PR can be approved.
 ### Lower Priority
 
 5. **Status endpoint diverges from the real check.**
-   - `daily_limit_status` doesn't exclude FAILED/PENDING transfers, so it can
+   - `daily_limit_status` does not exclude FAILED/PENDING transfers. Therefore it can
      report a different remaining balance than what `check_daily_limit` would
-     actually allow. Not unsafe on its own, but misleading for anyone building
-     against the API.
+     actually allow.
 
 6. **Optimization.**
    - `_amount_sent_today` runs on every send and every status check. If this
-     endpoint gets polled a lot from the mobile app, it'll show up as latency.
+     endpoint gets polled a lot from the mobile app, it will show up as latency.
 
 ---
 
 ## What I Left Out and Why
 
 **What I left out**
-- The project didn't specify which version of Python to use.
-- I found that `SQLAlchemy 2.0.30` doesn't work with `Python 3.14`.
+- The project did not specify which version of Python to use.
+- I found that `SQLAlchemy 2.0.30` does not work with `Python 3.14`.
 - I had to install an older `Python 3.11` on my machine to get the project working.
 
 **Why I left it out**
-- I didn't mention this in the review because it's a problem with the project's
-  setup, not something that changed in this PR.
+- I did not mention this in the review because it is a problem with the project's
+  setup and not something that changed in this PR.
 - It would be worth creating a separate task to pin the Python version in the
-  project settings, but it's unrelated to this ticket.
+  project settings, but it is unrelated to this ticket.
 
 ---
 
@@ -130,14 +128,14 @@ issues that need to be addressed before this PR can be approved.
 **Where it helped:**
 - Claude found two problems on its own: the missing migration and the race
   condition.
-- I already suspected the timezone bug — in a past project, users were spread
-  across different timezones and we needed to harmonize them — and the tool helped
+- I already suspected the timezone bug: in a past project, users were spread
+  across different timezones and we needed to harmonize them and the tool helped
   confirm it.
 
 **Where it fell short:**
-- The boundary bug (`>=` vs `>`) and the status endpoint bug are ones it didn't
+- The boundary bug (`>=` vs `>`) and the status endpoint bug are ones it did not
   catch; I found both myself.
-- I also noticed the optimization issue, which Claude didn't catch.
+- I also noticed the optimization issue, which Claude did not catch.
 
 **How I verified everything:**
 - I set up the project on my machine and read through all the code myself to
@@ -145,4 +143,3 @@ issues that need to be addressed before this PR can be approved.
 - I ran the existing test suite with pytest to confirm it passed cleanly before
   digging into the diff.
 - I tested the GraphQL endpoint with Postman and confirmed every finding myself.
-- 

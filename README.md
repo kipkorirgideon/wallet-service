@@ -6,7 +6,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 - When you add `daily_send_limit = Column(Integer, =False)` it changes the existing users table. The problem is that `Base.metadata.create_all(engine)` does not alter a created table. On an existing deployment the `SQLAlchemy` will Insert a column that is not present and there is no backfill for existing users.
 
-- To fix this you should write a migration that adds the column and backfills existing rows. You can use Alembic to manage migrations.
+- To fix this you should write a migration that adds the column and backfills existing rows. You can use [Alembic](http://alembic.sqlalchemy.org) to manage migrations.
 
 ## 2. `App/schema.py`. Make the check. Send atomic under concurrent requests
 

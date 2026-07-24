@@ -22,7 +22,9 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 ## 4. Allow transfers that land on the limit
 
-- In `app/limits.py` the comparison `already_sent + amount >= limit` rejects a transfer when the resulting daily total is exactly the configured limit. However the ticket says to block when the total would go above the limit. You should change this comparison to `>`.
+- In `app/limits.py` the comparison `already_sent + amount >= limit` rejects a transfer when the resulting daily total is exactly the configured limit.
+- However the ticket says to block when the total would go above the limit.
+- To fix this you should change this comparison to `>`.
 
 ## 5. `App/schema.py`. Status endpoint disagrees with the check
 

@@ -64,7 +64,8 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 ### Lower Priority
 
-5. Optimization: sum in SQL of Python (not blocking, but worth doing before this endpoint sees real traffic).
+5. **Optimization**
+   - `_amount_sent_today` pulls every transfer row for the day with an unnecessary `query.order_by(Transfer.created_at.desc()).all()` and sums in Python.
    
 ---
 

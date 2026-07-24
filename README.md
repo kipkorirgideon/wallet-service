@@ -77,6 +77,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 - The project did not specify which version of Python to use.
 - I found out that SQLAlchemy version 2.0.30 does not work with Python version 3.14.
 - I had to install an older version of Python version 3.11 on my computer to get the project working.
+  
 **Why I Left Out**
 - I did not mention this when I reviewed the project because it is a problem with the setup of the project not something that was changed in this update.
 - It would be a good idea to create a separate task to specify the Python version in the project settings but it is not related to the current task, about daily limits

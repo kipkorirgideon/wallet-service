@@ -8,10 +8,10 @@ issues that need to be addressed before this PR can be approved.
 
 - Adding `daily_send_limit = Column(Integer, nullable=False)` changes the existing
   users table. The problem is that `Base.metadata.create_all(engine)` does not alter
-  an already-created table. On an existing deployment, SQLAlchemy will query or
-  insert a column that isn't present, and there's no backfill for existing users.
+  an already-created table. On an existing deployment, `SQLAlchemy` will query or
+  insert a column that does not exists. Additionaly there is no backfill for existing rows.
 
-- Fix: write a migration that adds the column and backfills existing rows. You can
+- To fix this, write a migration that adds the column and backfills existing rows. You can
   use [Alembic](http://alembic.sqlalchemy.org) to manage migrations.
 
 ## 2. `app/schema.py` — Make the check and send atomic under concurrent requests
@@ -19,29 +19,29 @@ issues that need to be addressed before this PR can be approved.
 - `send_money` calls `limits.check_daily_limit` and `execute_transfer` as two
   separate transactions. This causes problems if two concurrent requests for the
   same sender come in at the same time: both can read the same `already_sent` total
-  before either transfer's balance update commits, so both pass the check and
-  proceed — taking the user's completed daily total over the limit.
+  before either transfer's balance update commits.If both pass the check and
+  proceed, it will make user's completed daily total over the limit.
 
 - For example, a user with a 10,000 limit who fires two 8,000 sends at once could
-  have both pass and succeed, landing at 16,000 sent — well above the limit. This is
+  have both pass and succeed, landing at 16,000 sent which is well above the limit. This is
   the exact thing the feature is supposed to stop.
 
-- Fix: wrap the check and the write in one DB transaction with a row lock on the
+- To fix this, wrap the check and the write in one DB transaction with a row lock on the
   user.
 
 ## 3. Use the user's country timezone for the daily window
 
 - `_start_of_today()` builds midnight from `datetime.utcnow()`, so the usage window
   changes at UTC midnight for every user. `CountryInfo` already carries a timezone
-  field, but it's currently only used for currency lookups. Calculate the start of
-  the local day from the user's country timezone instead.
+  field, but it is currently only used for currency lookups.
+- To fix this, calculate the start of the local day from the user's country timezone instead.
 
 ## 4. Allow transfers that land exactly on the limit
 
 - In `app/limits.py`, the comparison `already_sent + amount >= limit` rejects a
   transfer when the resulting daily total is exactly the configured limit.
 - The ticket says to block only when the total would go *above* the limit.
-- Fix: change the comparison to `>`.
+- To fix this, change the comparison to `>`.
 
 ## 5. `app/schema.py` — Keep the status query consistent with the real check
 
@@ -51,14 +51,14 @@ issues that need to be addressed before this PR can be approved.
   10,000 limit, should have 9,000 remaining per the real check. This endpoint
   reports `remaining: 1,000` instead — wrong and confusing for anyone building
   against this API.
-- Fix: call `_amount_sent_today` here instead of duplicating the filter logic.
+- To fix this, call `_amount_sent_today` here instead of duplicating the filter logic `[daily_limit_status]`.
 
 ## 6. `app/limits.py` — Optimization
 
 - `_amount_sent_today` pulls every transfer row for the day with
   `query.order_by(Transfer.created_at.desc()).all()` and sums in Python. This can
   cause latency if the endpoint gets polled a lot from the mobile app.
-- Fix: push the summation into SQL instead of pulling rows and summing in Python.
+- To fix this, push the summation into SQLAlchemy instead of pulling rows and summing in Python.
   Also drop the `order_by` — ordering isn't needed when summing.
 
 ## Review Highlights Summary

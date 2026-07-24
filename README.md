@@ -147,4 +147,3 @@ issues that need to be addressed before this PR can be approved.
 - I ran the existing test suite with pytest to confirm it passed cleanly before
   digging into the diff.
 - I tested the GraphQL endpoint with Postman and confirmed every finding myself.
-- 

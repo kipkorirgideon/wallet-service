@@ -66,6 +66,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 5. **Optimization**
    - `_amount_sent_today` pulls every transfer row for the day with an unnecessary `query.order_by(Transfer.created_at.desc()).all()` and sums in Python.
+   - This runs on every send and every status check. If this endpoint gets polled a lot from the mobile app it will show up as latency.
    
 ---
 

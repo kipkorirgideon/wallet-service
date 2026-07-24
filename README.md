@@ -52,33 +52,33 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 1. **Missing migration for the column**.
    - `create_all` won't alter an already created table.This will break on any existing deployment
-   - Since `send_daily_limit` is not nullable, there is no mechanism for backfilling existing users and current users.
+   - Since `send_daily_limit` is not nullable, there is no mechanism for backfilling existing rows.
 
 2. **Concurrent requests Issue**.
-   - The check and the write aren't atomic, so concurrent sends can bypass the daily limit entirely.
+   - The check and the write are not atomic, so concurrent sends can bypass the daily limit entirely.
 
 3. **Timezone handling bug**.
    - The daily window resets at UTC midnight for every user
 
 4. **Transfer limit boundary validation issue**.
-   - `>=` Of `>` incorrectly blocks a transfer that lands exactly on the limit.
+   - `>=` instead of `>` incorrectly blocks a transfer that lands exactly on the limit.
 
 ### Lower Priority
 
 5. **Optimization**
-   - `_amount_sent_today` pulls every transfer row for the day with an unnecessary `query.order_by(Transfer.created_at.desc()).all()` and sums in Python.
-   - This runs on every send and every status check. If this endpoint gets polled a lot from the mobile app it will show up as latency.
+   - `_amount_sent_today` runs for every send and every status check.
+   - If this endpoint gets polled a lot from the mobile app it will show up as latency.
    
 ---
 
 ## What I Left Out and Why
 **What I Left Out**
 - The project did not specify which version of Python to use.
-- I found out that SQLAlchemy version 2.0.30 does not work with Python version 3.14.
-- I had to install an older version of Python version 3.11 on my computer to get the project working.
+- I found out that `SQLAlchemy version 2.0.30` does not work with `Python version 3.14`.
+- I had to install an older version of `Python version 3.11` on my computer to get the project working.
   
 **Why I Left Out**
-- I did not mention this when I reviewed the project because it is a problem with the setup of the project not something that was changed in this update.
+- I did not mention this when I reviewed the project because it is a problem with the setup of the project not something that was changed in this   pr.
 - It would be a good idea to create a separate task to specify the Python version in the project settings but it is not related to the current task, about daily limits
 
 ---
@@ -88,15 +88,15 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 - I used Claude Code `[/code-review]` command to review this diff before writing it up.
 
 **Where it helped:**
-- It found two problems on its own:
+- Claude found two problems on its own:
   - Missing migrations
-  - the race condition.
-- I already suspected the timezone bug — in a past project, users were spread across
+  - Concurrent requests.
+- I already suspected the timezone bug: in my past project, users were spread across
   different timezones and we needed to harmonize them and the tool helped confirm it.
 
 **Where it fell short:**
-- The boundary bug for daily send limit
-- I also noticed an optimization issue that it didn't catch.
+- The boundary bug for daily send limit `>= & >`
+- I also noticed an optimization issue claude didn't catch.
 
 **How I verified everything:**
 - I set up the project on my machine and read through all the code myself to

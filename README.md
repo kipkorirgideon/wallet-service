@@ -12,8 +12,7 @@ and #2 are fixed. Going through each below, straight to the point.
 - On an existing deployment the `SQL Alchemy ORM` will query or insert a column that is not present 
 and there is no backfill for existing users.
 
-- Fix: write an actual migration that adds the column and backfills existing rows. This has to land 
-first — nothing else matters until it's in. Try using [Alembic](https://alembic.sqlalchemy.org/en/latest/) to manage migrations.
+- Fix: write an actual migration that adds the column and backfills existing rows. Try using [Alembic](https://alembic.sqlalchemy.org/en/latest/) to manage migrations.
 
 ## 2. `app/schema.py` — Make the check and send atomic under concurrent requests
 
@@ -112,4 +111,3 @@ timezones and we needed to harmonize them. The tool helped confirm it.
 - I set up the project on my local machine and read through all the code myself to understand it. 
     - I tested the real graphql endpoint with Postman. I confirmed every finding myself in `limits.py` and `schema.py`. 
     - Also noticed optimization issue which the `/claude-review` command didn't catch.
-

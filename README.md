@@ -1,4 +1,4 @@
-# Review: daily send limits
+# Review: Daily Send Limits
 
 Solid first pass on the structure — `check_daily_limit`, the accumulator,
 the GraphQL field for headroom, all makes sense. But there are two bugs

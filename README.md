@@ -35,7 +35,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 ## 6. `App/limits.py`. Optimization
 
 - The `_amount_sent_today` function pulls every transfer row for the day with a `query.order_by(Transfer.created_at.desc()).all()` and sums in Python. This can cause latency if the endpoint gets polled a lot from the mobile app.
-- To fix this, push the sum into SQL instead of pulling rows and summing in Python.
+- To fix this, push the summation into SQL with SQLAlchemy orm instead of pulling rows and summing in Python..
 - Also drop the `order_by` too. Ordering is not needed when doing summation.
 
 ## Review Highlights Summary

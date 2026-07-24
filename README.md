@@ -5,7 +5,7 @@ the GraphQL field for headroom, all makes sense. But there are two bugs
 here that will break prod, and a few smaller ones. Don't merge until #1
 and #2 are fixed. Going through each below, straight to the point.
 
-## 1. `app/models.py:52` — Add a migrations to manage existing and new columns
+## 1. `app/models.py` — Add a migrations to manage existing and new columns
 
 - Adding `daily_send_limit = Column(Integer, nullable=False)` changes the existing users table, but 
 `Base.metadata.create_all(engine)` does not alter an already-created table. 
@@ -15,7 +15,7 @@ and there is no backfill for existing users.
 - Fix: write an actual migration that adds the column and backfills existing rows. This has to land 
 first — nothing else matters until it's in. Try using `https://alembic.sqlalchemy.org/en/latest/` to manage migrations.
 
-## 2. `app/schema.py:105` — Make the check and send atomic under concurrent requests
+## 2. `app/schema.py` — Make the check and send atomic under concurrent requests
 
 - `send_money` calls `limits.check_daily_limit` and `execute_transfer` `(app/transfers.py)` as 
 two separate transactions. 
@@ -48,7 +48,7 @@ normal unit test won't catch this.
 - `Fix`: change `>=` to `>`. Add a test for the exact-boundary case nothing
 covers it right now.
 
-## 5. `app/schema.py:81` — status endpoint disagrees with the actual check
+## 5. `app/schema.py` — status endpoint disagrees with the actual check
 
 - `daily_limit_status` sums all of today's transfers itself instead of
 calling `_amount_sent_today`, so it doesn't exclude FAILED/PENDING.
@@ -60,7 +60,7 @@ this API.
 - Fix: just call `_amount_sent_today` here instead of duplicating the
 filter logic.
 
-## 6. `app/limits.py:43` — Optimization
+## 6. `app/limits.py` — Optimization
 
 - `_amount_sent_today` pulls every transfer row for the day with an
 unnecessary `query.order_by(Transfer.created_at.desc()).all()` and sums in Python. 

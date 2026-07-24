@@ -13,7 +13,7 @@ and #2 are fixed. Going through each below, straight to the point.
 and there is no backfill for existing users.
 
 - Fix: write an actual migration that adds the column and backfills existing rows. This has to land 
-first — nothing else matters until it's in. Try using `https://alembic.sqlalchemy.org/en/latest/` to manage migrations.
+first — nothing else matters until it's in. Try using [Alembic](https://alembic.sqlalchemy.org/en/latest/) to manage migrations.
 
 ## 2. `app/schema.py` — Make the check and send atomic under concurrent requests
 

@@ -108,7 +108,7 @@ related to the current task, about daily limits
 timezones and we needed to harmonize them. The tool helped confirm it.
 - The boundary bug and the status endpoint bug are ones I might have missed. 
     - Nothing crashes the code just quietly gives the wrong answer. 
-    - Watch for these patterns: >= vs > in limit checks, and duplicate logic that drifts from the real check.
+    - `>= and >` in limit checks and duplicate logic that drifts from the real check.
 - I set up the project on my local machine and read through all the code myself to understand it. 
     - I tested the real graphql endpoint with Postman. I confirmed every finding myself in `limits.py` and `schema.py`. 
     - I worked out the concurrency example by hand. 

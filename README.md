@@ -102,7 +102,7 @@ related to the current task, about daily limits
 
 ## Claude Code use
 
-- I used `Claude Code [beta]` [`/claude-review`]to review this diff before writing it up.
+- I used `Claude Code [beta]` [`/claude-review`] to review this diff before writing it up.
 - It found two real problems on its own: the missing migration and the race condition.
 - I already suspected the timezone bug, because in a past project I worked on, users were spread across different 
 timezones and we needed to harmonize them. The tool helped confirm it.

@@ -52,7 +52,7 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 1. **Missing migration for the column**.
    - `create_all` won't alter an already created table.This will break on any existing deployment
-   - Since `send_daily_limit` is not nullable there is no mechanism for backfilling existing users and current users.
+   - Since `send_daily_limit` is not nullable, there is no mechanism for backfilling existing users and current users.
 
 2. **Concurrent requests Issue**.
    - The check and the write aren't atomic, so concurrent sends can bypass the daily limit entirely.

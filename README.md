@@ -28,9 +28,10 @@ I took a look at the structure and I think it is a good start. The `check_daily_
 
 ## 5. `App/schema.py`. Keep Status Query Rules Consistent
 
-- The `daily_limit_status` sums all of todays transfers itself instead of calling `_amount_sent_today`. This means it does not exclude FAILED/PENDING transfers. For example if a user has an 8,000 transfer and a 1,000 COMPLETED one with a limit of 10,000, the real check would allow 9,000 more. However the endpoint reports `remaining: 1,000` which is wrong and confusing.
+- The `daily_limit_status` sums all of todays transfers itself instead of calling `_amount_sent_today`. This means it does not exclude FAILED/PENDING transfers.
+- For example if a user has an 8,000 transfer and a 1,000 COMPLETED one with a limit of 10,000, the real check would allow 9,000 more. However the endpoint reports `remaining: 1,000` which is wrong and confusing.
 
-- To fix this, you should call `_amount_sent_today` instead of duplicating the filter logic.
+- To fix this, you should call `_amount_sent_today` for summing todays transfer instead of duplicating the filter logic.
 
 ## 6. `App/limits.py`. Optimization
 

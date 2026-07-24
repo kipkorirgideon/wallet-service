@@ -70,15 +70,33 @@ I took a look at the structure and I think it is a good start. The `check_daily_
    
 ---
 
-## What I Left Out. Why
+## What I Left Out and Why
+**What I Left Out**
+- The project did not specify which version of Python to use.
+- I found out that SQLAlchemy version 2.0.30 does not work with Python version 3.14.
+- I had to install an older version of Python version 3.11 on my computer to get the project working.
+**Why I Left Out**
+- I did not mention this when I reviewed the project because it is a problem with the setup of the project not something that was changed in this update.
+- It would be a good idea to create a separate task to specify the Python version in the project settings but it is not related to the current task, about daily limits
 
-- I did not mention the Python version issue when I reviewed the project because it is a problem with the setup of the project, not something that was changed in this update.
-- It would be an idea to create a separate task to specify the Python version in the project settings but it is not related to the current task about daily limits.
+---
 
 ## Claude Code use
 
-- I used Claude Code to review this diff before writing it up. It found two problems on its own i.e the missing migration and the race condition.
-- I already suspected the timezone bug because in a project I worked on users were spread across different timezones and we needed to harmonize them. The tool helped confirm it.
-- The boundary bug and the status endpoint bug are ones I might have missed.
-- I set up the project on my machine and read through all the code myself to understand it. I tested the GraphQL endpoint, with Postman and confirmed every finding myself
-- I also noticed an optimization issue that the Claude Code did not catch.
+- I used Claude Code to review this diff before writing it up.
+
+**Where it helped:**
+- It found two problems on its own:
+  - Missing migrations
+  - the race condition.
+- I already suspected the timezone bug — in a past project, users were spread across
+  different timezones and we needed to harmonize them and the tool helped confirm it.
+
+**Where it fell short:**
+- The boundary bug for daily send limit
+- I also noticed an optimization issue that it didn't catch.
+
+**How I verified everything:**
+- I set up the project on my machine and read through all the code myself to
+  understand it.
+- I tested the GraphQL endpoint with Postman and confirmed every finding myself.

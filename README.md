@@ -9,7 +9,7 @@ issues that need to be addressed before this PR can be approved.
 - Adding `daily_send_limit = Column(Integer, nullable=False)` changes the existing
   users table. The problem is that `Base.metadata.create_all(engine)` does not alter
   an already-created table. On an existing deployment, `SQLAlchemy` will query or
-  insert a column that does not exists. Additionaly there is no backfill for existing rows.
+  insert a column that does not exist. Additionally there is no backfill for existing rows.
 
 - To fix this, write a migration that adds the column and backfills existing rows. You can
   use [Alembic](http://alembic.sqlalchemy.org) to manage migrations.
@@ -71,7 +71,7 @@ issues that need to be addressed before this PR can be approved.
   - Let the daily limit be bypassed or misapplied.
   - Will break deployment on an existing database (migration gap).
   - Make the status endpoint disagree with the actual enforcement logic.
-- Iam requesting these changes before approval.
+- I am requesting these changes before approval.
 
 ### High Priority Issues (Must Fix Before Merge)
 

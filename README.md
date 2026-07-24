@@ -68,12 +68,12 @@ unnecessary `query.order_by(Transfer.created_at.desc()).all()` and sums in Pytho
 the mobile app it will show up as latency. 
 - Fix: push that into `SQL with SQLAlchemy` instead of pulling rows and summing in Python:
 
-# Review Highlights Summary
-## Overall Assessment
+## Review Highlights Summary
+### Overall Assessment
 - The feature is well-scoped.
 - The happy path works as described in the PR.
 
-## High Priority Issues (Must Fix Before Merge)
+### High Priority Issues (Must Fix Before Merge)
 The following issues affect the core correctness of the daily transfer limit and should be resolved before merging:
 1. Transfer limit boundary validation issue
     - Causes incorrect enforcement at the transfer limit boundary.

@@ -46,15 +46,24 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    email_address = Column(String(50), nullable=False)
     mobile = Column(String, unique=True, nullable=False)
     country = Column(Enum(Country), nullable=False)
     balance = Column(Integer, nullable=False, default=0)  # minor units
+    daily_send_limit = Column(Integer, nullable=False)  # minor units
 
     sent_transfers = relationship(
         "Transfer",
         foreign_keys="Transfer.sender_id",
         back_populates="sender",
     )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.daily_send_limit is None and self.country is not None:
+            from .countries import COUNTRY_INFO
+
+            self.daily_send_limit = COUNTRY_INFO[self.country].daily_send_limit
 
 
 class Transfer(Base):

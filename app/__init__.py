@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, jsonify, request
 
 from .auth import build_context
@@ -7,7 +9,8 @@ from .schema import schema
 
 def create_app():
     app = Flask(__name__)
-    Base.metadata.create_all(engine)
+
+    # Base.metadata.create_all(engine)
 
     @app.post("/graphql")
     def graphql_view():

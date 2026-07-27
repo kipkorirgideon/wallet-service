@@ -4,6 +4,8 @@ The business rules for moving money live here. Callers should go through
 :func:`execute_transfer` rather than mutating balances or creating transfer rows directly.
 """
 
+from datetime import datetime
+
 from sqlalchemy import update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -15,14 +17,17 @@ class TransferError(Exception):
     """Raised when a transfer cannot be completed."""
 
 
-def get_transfers(session: Session, user: User) -> list[Transfer]:
-    """Get all transfers made by a user."""
-    return (
-        session.query(Transfer)
-        .filter(Transfer.sender_id == user.id)
-        .order_by(Transfer.created_at.desc())
-        .all()
-    )
+def get_transfers(
+    session: Session, user: User, since: datetime | None = None
+) -> list[Transfer]:
+    """Get transfers made by a user, newest first.
+
+    If ``since`` is given, only transfers created on or after it are returned.
+    """
+    query = session.query(Transfer).filter(Transfer.sender_id == user.id)
+    if since is not None:
+        query = query.filter(Transfer.created_at >= since)
+    return query.order_by(Transfer.created_at.desc()).all()
 
 
 def execute_transfer(

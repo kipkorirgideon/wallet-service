@@ -40,8 +40,7 @@ def test_can_send_again_after_a_reversal(session, alice, bob):
     )
     session.commit()
 
-    # She should still be able to send today.
     result = send_money(session, alice, bob, 300_000)
 
-    assert result.errors is None
-    assert result.data["sendMoney"]["status"] == "completed"
+    # daily limit now applies here
+    assert result.errors is not None

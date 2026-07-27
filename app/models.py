@@ -46,6 +46,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    email_address = Column(String(50), nullable=False)
     mobile = Column(String, unique=True, nullable=False)
     country = Column(Enum(Country), nullable=False)
     balance = Column(Integer, nullable=False, default=0)  # minor units
